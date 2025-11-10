@@ -1,1 +1,6 @@
 # chat-boat
+
+
+### python version
+- 3.12.0
+
