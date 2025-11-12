@@ -16,3 +16,8 @@ class ModelUseCaseEnum(Enum):
 
 class ModelToolsEnum(Enum):
     TAVILY="Tavily"
+
+class NewsTimeFrame(Enum):
+    DAILY="Daily"
+    WEEKLY="Weekly"
+    MONTHLY="Monthly"

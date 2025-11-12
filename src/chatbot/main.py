@@ -66,7 +66,7 @@ class InitializeChatbot:
         try:
             graph_builder = GraphBuilder(input_user, model)
             graph = graph_builder.setup_graph(use_case)
-            display_res = DisplayStreamlitResponse(use_case, graph, user_message)
+            display_res = DisplayStreamlitResponse(use_case, graph, user_message, input_user)
             display_res.display_response()
             
         except Exception as e:

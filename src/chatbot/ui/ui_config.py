@@ -1,7 +1,7 @@
 from configparser import ConfigParser
 import os
 from pathlib import Path
-
+import emoji
 
 class Config:
     def __init__(self, config_file="ui_config.ini"):
@@ -28,6 +28,9 @@ class Config:
 
     def get_page_title(self):
         return self.config["DEFAULT"].get("PAGE_TITLE", "").strip()
+
+    def load_icons(self):
+        return {"key": emoji.emojize(":key:"), "calender": emoji.emojize(":calendar:")}
     
 
     

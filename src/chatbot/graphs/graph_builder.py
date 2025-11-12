@@ -1,7 +1,7 @@
 from src.chatbot.states import GraphState
 from langgraph.graph import StateGraph, START, END
 
-from src.chatbot.nodes import BasicChatbotNode, TavilyNode
+from src.chatbot.nodes import BasicChatbotNode, TavilyNode, NewsNode
 from src.chatbot.core.schema import ModelBaseInfo
 from src.chatbot.core.enum import ModelUseCaseEnum
 from langgraph.prebuilt import tools_condition
@@ -42,9 +42,10 @@ class GraphBuilder:
         )
         
         self.tavily_chatbot = TavilyNode(self.model, tools=tools)
+        
          # nodes
         self.graph_builder.add_node("chatbot", self.tavily_chatbot.process_with_tool)
-        self.graph_builder.add_node("tavily", self.tavily_chatbot.process)
+        # self.graph_builder.add_node("tavily", self.tavily_chatbot.process)
         self.graph_builder.add_node("tools", tools_node)
 
         # edges
@@ -52,6 +53,27 @@ class GraphBuilder:
         self.graph_builder.add_conditional_edges("chatbot", tools_condition)
         self.graph_builder.add_edge("tools", "chatbot")
         self.graph_builder.add_edge("chatbot", END)
+
+    def _new_graph_builder(self):
+        """use case is news. building graph new optimizer 
+            and provide summarized news, use tavily tool for fetch news
+        """
+        tavily_api_key = self.user_input.get("tavily_api_key")
+        news_node_obj = NewsNode(self.model, tavily_api_key)
+        
+        # nodes
+        self.graph_builder.add_node("fetch_news", news_node_obj.fetch_news)
+        self.graph_builder.add_node("summarize_news", news_node_obj.summarize_news)
+        # self.graph_builder.add_node("save_result", "")
+
+        # edges
+        self.graph_builder.set_entry_point("fetch_news")
+        self.graph_builder.add_edge("fetch_news", "summarize_news")
+        # self.graph_builder.add_edge("summarize_news", "save_result")
+        self.graph_builder.add_edge("summarize_news", END)
+        
+        
+        
 
 
     def setup_graph(self, use_case: str):
@@ -67,8 +89,7 @@ class GraphBuilder:
                     self._tavily_chatbot_graph()
                 
                 case ModelUseCaseEnum.AI_NEWS:
-                    # TODO: Add Gemini implementation
-                    raise NotImplementedError("Gemini model not implemented yet")
+                    self._new_graph_builder()
                 
                 case ModelUseCaseEnum.BLOG_GENERATOR:
                     # TODO: Add Gemini implementation

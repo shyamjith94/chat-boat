@@ -5,10 +5,11 @@ from langchain.messages import HumanMessage, AIMessage, ToolMessage
 
 
 class DisplayStreamlitResponse:
-    def __init__(self, use_case:str, graph:Any, user_message: str):
+    def __init__(self, use_case:str, graph:Any, user_message: str, input_user: Dict):
         self.use_case = use_case
         self.graph = graph
         self.user_message = user_message
+        self.user_input = input_user
 
 
     def display_response(self):
@@ -23,11 +24,17 @@ class DisplayStreamlitResponse:
             for msg in st.session_state.get("chat_history", []):
                 role = msg.get("role")
                 content = msg.get("content")
+                tools = msg.get("tools")
                 if role == "user":
                     with st.chat_message("user"):
                         st.write(content)
+                    if tools:   
+                        with st.chat_message("assistant"):
+                            st.write(tools)
                 else:
                     with st.chat_message("assistant"):
+                        if tools:   
+                                st.write(tools)
                         st.write(content)
 
         # show previous messages first
@@ -69,7 +76,7 @@ class DisplayStreamlitResponse:
 
        
         
-        elif use_case == ModelUseCaseEnum.CHAT_WITH_TOOL:
+        elif use_case == ModelUseCaseEnum.CHAT_WITH_TOOL or use_case == ModelUseCaseEnum.AI_NEWS:
             # record and render the user's message
             try:
                 user_entry = {"role": "user", "content": self.user_message}
@@ -86,7 +93,10 @@ class DisplayStreamlitResponse:
                     message_placeholder.markdown("Thinking...")
 
                 assistant_text_parts: List[str] = []
-                for response in self.graph.stream({"messages":HumanMessage(self.user_message)}):
+                used_tools_str = ""
+                news_frequency = self.user_input.get("news_frequency", "")
+                
+                for response in self.graph.stream({"messages":HumanMessage(self.user_message), "news_frequency":news_frequency}):
                     for event in response.values():
                         raw = event.get("messages") if isinstance(event, dict) else event
                         if isinstance(raw, list) and len(raw) > 0:
@@ -97,25 +107,24 @@ class DisplayStreamlitResponse:
                         if type(message) == HumanMessage:
                             continue
                         
-                        elif type(message) == AIMessage and message.content:
-                            # accumulate streamed assistant chunks and update placeholder
-                            assistant_text_parts.append(message.content)
-                            # update the message placeholder with accumulated content
-                            message_placeholder.markdown("\n".join(assistant_text_parts))
-
-                        elif type(message) == AIMessage and len(message.tool_calls):
-                            used_tools = ", ".join(tool.get("name", "") for tool in message.tool_calls)
-                            # show tools used in the tools placeholder and also record in history
-                            tools_placeholder.write(used_tools)
-                            # also add to assistant parts so it appears inline with response
-                            assistant_text_parts.append(used_tools)
+                        elif type(message) == AIMessage:
+                            if message.content:
+                                # accumulate streamed assistant chunks and update placeholder
+                                assistant_text_parts.append(message.content)
+                                # update the message placeholder with accumulated content
+                                message_placeholder.markdown("\n".join(assistant_text_parts))
+                                
+                            if len(message.tool_calls):
+                                used_tools_str += ", ".join(tool.get("name", "") for tool in message.tool_calls)
+                                tools_placeholder.markdown(used_tools_str)
+                                                    
 
                 assistant_full = "\n".join(assistant_text_parts).strip()
                 if assistant_full:
-                    st.session_state["chat_history"].append({"role": "assistant", "content": assistant_full})
+                    st.session_state["chat_history"].append({"role": "assistant", "content": assistant_full, "tools":used_tools_str})
             except Exception as e:
                 with st.chat_message("assistant"):
-                    st.session_state["chat_history"].append({"role": "assistant", "content": str(e)})
+                    st.session_state["chat_history"].append({"role": "assistant", "content": str(e), "tools":used_tools_str})
                     message_placeholder.markdown(str(e))
 
                 

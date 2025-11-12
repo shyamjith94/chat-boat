@@ -1,3 +1,4 @@
+from email import iterators
 from http.client import REQUEST_ENTITY_TOO_LARGE
 from logging import config
 from typing import List
@@ -5,14 +6,15 @@ from src.chatbot.ui import Config
 from src.chatbot.core.enum import ModelNameEnum
 from src.chatbot.core.schema import ModelBaseInfo
 import streamlit as st
-from src.chatbot.core.enum import ModelUseCaseEnum, ModelToolsEnum
-
+from src.chatbot.core.enum import ModelUseCaseEnum, ModelToolsEnum,NewsTimeFrame
+from operator import attrgetter
 
 class LoadStreamlitUi:
     def __init__(self):
         self._config = Config()
         self._controls: ModelBaseInfo = {}
-
+        self._icons = self._config.load_icons()
+        
         st.markdown("""
             <style>
             [data-testid="stSidebar"] {
@@ -78,7 +80,7 @@ class LoadStreamlitUi:
             self._controls["selected_model"] = st.selectbox(
                 "Select model", llm_model_option, key="selected_model", on_change=self._on_llm_change)
             self._controls["api_key"] = st.text_input(
-                "Api key", type="password")
+                "Api key", type="password", icon=self._icons.get("key"))
             self._controls["selected_use_case"] = st.selectbox(
                 "Select use case", use_case_option)
 
@@ -88,20 +90,25 @@ class LoadStreamlitUi:
 
                 # play with tools
                 if use_case == ModelUseCaseEnum.CHAT_WITH_TOOL:
-                    st.info("Provide tools details")
                     tools_option = self._config.get_model_tools()
                     self._controls["selected_tool"] = st.selectbox(
                         "Select tool", tools_option)
 
                     try:
                         if ModelToolsEnum(self._controls.get("selected_tool")) == ModelToolsEnum.TAVILY:
-                            st.info(
-                                "Its using for web search for adding key visit \n https://app.tavily.com/home")
                             self._controls["tavily_api_key"] = st.text_input(
-                                "enter tavily api key")
+                                "enter tavily api key https://app.tavily.com/home", type="password", icon=self._icons.get("key"))
                     except KeyError:
                         print(f"Tool selection error")
                         st.error("tool selection error")
+                if use_case == ModelUseCaseEnum.AI_NEWS:
+                    get_values = list(map(attrgetter("value"), NewsTimeFrame))
+                    self._controls["news_frequency"] = st.selectbox(
+                        f"{self._icons.get("calendar")}Select time frame", get_values)
+                    self._controls["selected_tool"] = ModelToolsEnum.TAVILY.value
+                    self._controls["tavily_api_key"] = st.text_input(
+                                "enter tavily api key https://app.tavily.com/home", type="password", icon=self._icons.get("key"))
+                    
             except KeyError:
                 print(f"Use case selection error")
                 st.error("Use case selection error")

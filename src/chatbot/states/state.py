@@ -10,5 +10,8 @@ class GraphState(TypedDict):
         TypedDict (_type_): _description_
     """
     messages:Annotated[List, add_messages]
+    summary:List
+    news_data:str
+    news_frequency:str
 
     
