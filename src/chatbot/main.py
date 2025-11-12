@@ -57,8 +57,9 @@ class InitializeChatbot:
         use_case = input_user.get("selected_use_case")
         
         # Create columns for text input and send button on same line
-        user_message = st.text_input("enter the message")
+        # user_message = st.text_input("enter the message")
         
+        user_message = st.chat_input("Say something...")
         if not user_message:
             return
 
@@ -69,7 +70,6 @@ class InitializeChatbot:
             display_res.display_response()
             
         except Exception as e:
-            print(e)
             print(f"graph builder exception {str(e)}")
             return
         

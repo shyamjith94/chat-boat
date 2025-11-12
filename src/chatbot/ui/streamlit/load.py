@@ -1,50 +1,109 @@
 from http.client import REQUEST_ENTITY_TOO_LARGE
 from logging import config
 from typing import List
-from chatbot.ui import Config
-from chatbot.core.enum import ModelNameEnum
-from chatbot.core.schema import ModelBaseInfo
+from src.chatbot.ui import Config
+from src.chatbot.core.enum import ModelNameEnum
+from src.chatbot.core.schema import ModelBaseInfo
 import streamlit as st
+from src.chatbot.core.enum import ModelUseCaseEnum, ModelToolsEnum
+
 
 class LoadStreamlitUi:
     def __init__(self):
         self._config = Config()
-        self._controls:ModelBaseInfo = {}
+        self._controls: ModelBaseInfo = {}
 
-    def _get_model_names(self):
+        st.markdown("""
+            <style>
+            [data-testid="stSidebar"] {
+                background-color: white !important; 
+                padding-top: 1rem;
+                padding-bottom: 3rem;
+            }
+            [data-testid="stSidebar"] > div:first-child {
+                overflow-y: auto;
+                background-color: var(--secondary-background-color) !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+
+    def _on_llm_change(self):
+        """Streamlit callback when selected LLM changes.
+        """
+        # Mark that LLM changed so the UI can react on the next run
+        st.session_state["health_check"] = True
+
+    def _get_model_names(self, selected_llm: str | None = None):
+        """Return model names for the currently selected LLM.
+
+        Priority for determining selected LLM:
+
+        """
+        if selected_llm is None:
+            selected_llm = st.session_state.get(
+                "selected_llm", self._controls.get("selected_llm"))
+
         try:
-            model_name = self._config.get_model_option(self._controls["selected_llm"])
-            if len(model_name) == 0:
+            model_name = self._config.get_model_options(selected_llm)
+            if not model_name:
                 return ["Model not found"]
             return [name.capitalize() for name in model_name]
-        except KeyError:
+        except Exception:
+            # log and return fallback
             print("model selection key error")
             return ["Model not found"]
 
-    
     def load_streamlit_ui(self):
-        st.set_page_config(page_title=self._config.get_page_title(), layout="wide")
+        st.set_page_config(
+            page_title=self._config.get_page_title(), layout="wide")
         st.header(self._config.get_page_title())
 
-        with st.sidebar:
-            
-            llm_options = self._config.get_llm_option()
-            use_case_option = self._config.get_use_case_option()
-            
-            self._controls["selected_llm"] = st.selectbox("Select LLm", llm_options)
-            llm_model_option:List[str] = self._get_model_names()
-            
-            self._controls["selected_model"] = st.selectbox("Select model", llm_model_option)
-            # store api_key in controls (Config is not a mapping)
-            self._controls["api_key"] = st.text_input("Api key", type="password")
+       
 
-            # update session state entries individually instead of overwriting
-            # the entire session_state object
-            st.session_state["selected_model"] = self._controls["selected_model"]
-            st.session_state["api_key"] = self._controls["api_key"]
-            self._controls["selected_use_case"] = st.selectbox("Select use case", use_case_option)
+        with st.sidebar:
+
+            llm_options = self._config.get_llm_options()
+            use_case_option = self._config.get_use_case_options()
+
+            st.selectbox("Select LLm", llm_options,
+                         key="selected_llm", on_change=self._on_llm_change)
+            # synchronize into controls for other code paths
+            self._controls["selected_llm"] = st.session_state.get(
+                "selected_llm")
+
+            llm_model_option: List[str] = self._get_model_names()
+
+            # model select box uses a key so value is kept in session_state
+            self._controls["selected_model"] = st.selectbox(
+                "Select model", llm_model_option, key="selected_model", on_change=self._on_llm_change)
+            self._controls["api_key"] = st.text_input(
+                "Api key", type="password")
+            self._controls["selected_use_case"] = st.selectbox(
+                "Select use case", use_case_option)
+
+            try:
+                use_case = ModelUseCaseEnum(
+                    self._controls.get("selected_use_case"))
+
+                # play with tools
+                if use_case == ModelUseCaseEnum.CHAT_WITH_TOOL:
+                    st.info("Provide tools details")
+                    tools_option = self._config.get_model_tools()
+                    self._controls["selected_tool"] = st.selectbox(
+                        "Select tool", tools_option)
+
+                    try:
+                        if ModelToolsEnum(self._controls.get("selected_tool")) == ModelToolsEnum.TAVILY:
+                            st.info(
+                                "Its using for web search for adding key visit \n https://app.tavily.com/home")
+                            self._controls["tavily_api_key"] = st.text_input(
+                                "enter tavily api key")
+                    except KeyError:
+                        print(f"Tool selection error")
+                        st.error("tool selection error")
+            except KeyError:
+                print(f"Use case selection error")
+                st.error("Use case selection error")
 
         return self._controls
-
-    
-        

@@ -12,3 +12,7 @@ class ModelUseCaseEnum(Enum):
     CHAT_WITH_TOOL = "Chatbot with tool"
     AI_NEWS = "AI News"
     BLOG_GENERATOR = "Blog generator"
+
+
+class ModelToolsEnum(Enum):
+    TAVILY="Tavily"

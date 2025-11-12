@@ -14,14 +14,17 @@ class Config:
         self.config = ConfigParser()
         self.config.read(self.file, encoding="utf-8")
 
-    def get_llm_option(self):
+    def get_llm_options(self):
         return self.config["DEFAULT"].get("LLM_OPTIONS", "").split(",")
 
-    def get_use_case_option(self):
+    def get_use_case_options(self):
         return self.config["DEFAULT"].get("USE_CASE_OPTIONS", "").split(",")
 
-    def get_model_option(self, model_name: str):
+    def get_model_options(self, model_name: str):
         return self.config["DEFAULT"].get(model_name, "").split(",")
+
+    def get_model_tools(self):
+        return self.config["DEFAULT"].get("TOOLS", "").split(",")
 
     def get_page_title(self):
         return self.config["DEFAULT"].get("PAGE_TITLE", "").strip()
