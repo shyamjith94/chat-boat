@@ -63,7 +63,7 @@ cd chat-boat
 ```
 
 ### 2. Create a Virtual Environment (Recommended)
-### - python version3.12
+
 ```bash
 # Using venv
 python -m venv venv
