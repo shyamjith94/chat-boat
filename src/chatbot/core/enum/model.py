@@ -16,6 +16,7 @@ class ModelUseCaseEnum(Enum):
 
 class ModelToolsEnum(Enum):
     TAVILY="Tavily"
+    SQL="Sql"
 
 class NewsTimeFrame(Enum):
     DAILY="Daily"

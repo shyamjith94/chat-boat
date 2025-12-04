@@ -8,6 +8,8 @@ from src.chatbot.core.schema import ModelBaseInfo
 import streamlit as st
 from src.chatbot.core.enum import ModelUseCaseEnum, ModelToolsEnum,NewsTimeFrame
 from operator import attrgetter
+import os
+from src.chatbot.core.settings import settings
 
 class LoadStreamlitUi:
     def __init__(self):
@@ -94,13 +96,31 @@ class LoadStreamlitUi:
                     self._controls["selected_tool"] = st.selectbox(
                         "Select tool", tools_option)
 
+                    #  tavily api key input
                     try:
                         if ModelToolsEnum(self._controls.get("selected_tool")) == ModelToolsEnum.TAVILY:
                             self._controls["tavily_api_key"] = st.text_input(
                                 "enter tavily api key https://app.tavily.com/home", type="password", icon=self._icons.get("key"))
                     except KeyError:
-                        print(f"Tool selection error")
-                        st.error("tool selection error")
+                        print(f"Tool Tavily selection error")
+                        st.error("tool tavily selection error")
+
+                    #  sql file upload
+                    try:
+                        if ModelToolsEnum(self._controls.get("selected_tool")) == ModelToolsEnum.SQL:
+                            uploaded_file = st.file_uploader("Upload your .db file", type=["db"])
+                            if uploaded_file is not None:
+                                file_path = os.path.join(os.getcwd(), f"{settings.UPLOAD_DIR}/{uploaded_file.name}")
+                                with open(file_path, "wb") as f:
+                                    f.write(uploaded_file.getvalue())
+                                self._controls["sql_file_path"] = file_path
+                                st.success(f"File {uploaded_file.name} uploaded successfully")
+
+                                
+                    except KeyError:
+                        print(f"Tool SQl selection error")
+                        st.error("tool Tavily selection error")
+                        
                 if use_case == ModelUseCaseEnum.AI_NEWS:
                     get_values = list(map(attrgetter("value"), NewsTimeFrame))
                     self._controls["news_frequency"] = st.selectbox(
@@ -108,7 +128,7 @@ class LoadStreamlitUi:
                     self._controls["selected_tool"] = ModelToolsEnum.TAVILY.value
                     self._controls["tavily_api_key"] = st.text_input(
                                 "enter tavily api key https://app.tavily.com/home", type="password", icon=self._icons.get("key"))
-                    
+
             except KeyError:
                 print(f"Use case selection error")
                 st.error("Use case selection error")
